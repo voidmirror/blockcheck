@@ -6,15 +6,16 @@
               class="start-check btn btn-primary btn-lg"
               href="start"
       >
-        Check your provider
+        Проверь своего провайдера
+        <div class="spinner-grow hidden" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
       </button>
-      <div class="spinner-grow hidden" role="status">
-        <span class="visually-hidden">Loading...</span>
-      </div>
   </div>
     <div class="results">
-        <h2>Results</h2>
+        <h2>Результаты</h2>
     </div>
+    <p class="results">Для получения корректных результатов используйте DNS-сервер провайдера и отключите средства обхода блокировок.</p>
 
   <div class="accordion hidden" id="accordionExample">
     <div class="accordion-item">
@@ -26,7 +27,7 @@
           </div>
         </button>
       </h2>
-      <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+      <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
         <div class="accordion-body dns">
           <p class="placeholder-glow dns-loading">
             <span class="placeholder col-7"></span>
@@ -70,7 +71,7 @@
       </h2>
       <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
         <div class="accordion-body http">
-          <h4 class="subdomain">Subdomain</h4>
+          <h4 class="subdomain">Поддомен</h4>
           <p class="placeholder-glow http-loading">
             <span class="placeholder col-7"></span>
             <span class="placeholder col-4"></span>
@@ -78,7 +79,7 @@
             <span class="placeholder col-6"></span>
             <span class="placeholder col-8"></span>
           </p>
-          <h4 class="http-result">HTTP check result</h4>
+          <h4 class="http-result">Результат проверки HTTP</h4>
           <p class="placeholder-glow http-loading">
             <span class="placeholder col-7"></span>
             <span class="placeholder col-4"></span>
@@ -100,7 +101,7 @@
       </h2>
       <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionExample">
         <div class="accordion-body dpi">
-          <p class="placeholder-glow http-loading">
+          <p class="placeholder-glow dpi-loading">
             <span class="placeholder col-7"></span>
             <span class="placeholder col-4"></span>
             <span class="placeholder col-4"></span>
@@ -115,49 +116,55 @@
     <script>
 
         $(".start-check")
-            .click(function(){
-                $(".results").show(1000);
+            .click(async function () {
+              $(".results").show(1000);
 
-                $(".spinner-grow").toggleClass("hidden");
-                $(".accordion").toggleClass("hidden");
-
-                $.get("start", function(data, status){
-                    const obj = JSON.parse(data);
-                    $(".results").append(obj.msg + "\n\n");
-                });
-
-                $.get("get-ip", function(data, status) {
-                    const obj = JSON.parse(data);
-                    var new_div = $(obj.msg).hide();
-                    $(".results").append(new_div);
-                    new_div.slideDown();
-                });
-
-                $.get("dns", function(data, status) {
-                    const obj = JSON.parse(data);
-                    $(".results").append(obj.msg + "\n\n");
-                    $(".dns-loading").toggleClass("hidden");
-                    $(".dns").append(obj.msg);
-                });
-
-                $.get("https", function(data, status) {
-                    const obj = JSON.parse(data);
-                    $(".results").append(obj.msg + "\n\n");
-                    $(".https-loading").toggleClass("hidden");
-                    $(".https").append(obj.msg);
-                });
-
-                $.get("http", function(data, status) {
-                    const obj = JSON.parse(data);
-                    $(".results").append(obj.http + "\n\n");
-                    $(".http-loading").toggleClass("hidden");
-                    $(".subdomain").after(obj.subdomain);
-                    $(".http-result").after(obj.http);
-                });
+              $(".accordion").toggleClass("hidden");
+              $(".spinner-grow").removeClass("hidden");
 
 
-                $(".spinner-grow").toggleClass("hidden");
+              $.get("start", function (data, status) {
+
+              });
+
+              $.get("get-ip", function (data, status) {
+                const obj = JSON.parse(data);
+                var new_div = $(obj.msg);
+                $(".results").append(new_div);
+              });
+
+              $.get("dns", function (data, status) {
+                const obj = JSON.parse(data);
+                $(".dns-loading").addClass("hidden");
+                $(".dns").append(obj.msg);
+              });
+
+              $.get("https", function (data, status) {
+                const obj = JSON.parse(data);
+                $(".https-loading").addClass("hidden");
+                $(".https").append(obj.msg);
+              });
+
+              await $.get("http", function (data, status) {
+                const obj = JSON.parse(data);
+                $(".http-loading").addClass("hidden");
+                $(".subdomain").after(obj.subdomain);
+                $(".http-result").after(obj.http);
+              });
+
+              await $.get("dpi", function (data, status) {
+                const obj = JSON.parse(data);
+                $(".dpi-loading").addClass("hidden");
+                $(".dpi").append(obj.msg);
+              });
+
+
+              $(".spinner-grow").addClass("hidden");
             });
+
+        async function dns() {
+
+        }
     </script>
 
 

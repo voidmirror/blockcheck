@@ -203,14 +203,15 @@ def print(*args, **kwargs):
         printed_text += this_text
         printed_text_with_debug += this_text
     else:
+        if web_interface:
+            message_to_print += print_string(*args, **kwargs) + "<br>"
+
         if args and sys.stdout.encoding != 'UTF-8':
             args = [x.translate(trans_table).replace("[☠]", "[FAIL]").replace("[☺]", "[:)]"). \
                         encode(sys.stdout.encoding, 'replace').decode(sys.stdout.encoding) for x in args
                     ]
         if not web_interface:
             __builtins__.print(*args, **kwargs)
-        else:
-            message_to_print += print_string(*args, **kwargs)
         this_text = print_string(*args, **kwargs)
         printed_text += this_text
         printed_text_with_debug += this_text
@@ -894,6 +895,8 @@ def test_https_cert():
 
 
 def test_dpi():
+    global message_to_print
+    message_to_print = ""
     print("[O] Тестируем обход DPI" + (' (только IPv4)' if ipv6_available else ''))
 
     dpiresults = []
@@ -930,6 +933,8 @@ def test_dpi():
                     dpiresults.append('Passive DPI')
                 else:
                     print("[☠] Сайт не открывается")
+    if web_interface:
+        return message_to_print
     return list(set(dpiresults))
 
 

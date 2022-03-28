@@ -48,7 +48,7 @@ def dns():
         dnsv6 = blockcheck.test_dns(blockcheck.DNS_IPV6)
     result_msg = ""
     if dnsv4 == 5:
-        result_msg = "[!] Не удалось определить способ блокировки IPv4 DNS Если вы используете DNS провайдера, возможно, ответы DNS модифицирует вышестоящий провайдер.\nВам следует использовать шифрованный канал до DNS-серверов, например, через VPN, Tor, HTTPS/Socks прокси или DNSCrypt."
+        result_msg = "[⚠] Не удалось определить способ блокировки IPv4 DNS Если вы используете DNS провайдера, возможно, ответы DNS модифицирует вышестоящий провайдер.\nВам следует использовать шифрованный канал до DNS-серверов, например, через VPN, Tor, HTTPS/Socks прокси или DNSCrypt."
     elif dnsv4 == 4:
         result_msg = "[⚠] Ваш провайдер блокирует сторонние IPv4 DNS-серверы.\n" + \
                      "Вам следует использовать шифрованный канал до DNS-серверов, например, через VPN, Tor, " + \
@@ -190,8 +190,8 @@ def http_check():
 def dpi_check():
     if http_v4 > 0 or http_v6 > 0 or blockcheck.force_dpi_check:
         dpi = blockcheck.test_dpi()
-        # todo добавить результаты
-
+        print(dpi)
+        return json.dumps({'msg': dpi})
 
 
 def run_app():
