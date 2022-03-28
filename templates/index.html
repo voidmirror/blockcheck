@@ -1,0 +1,165 @@
+{% extends 'main-page.html' %}
+
+{% block content %}
+  <div>
+      <button type="button"
+              class="start-check btn btn-primary btn-lg"
+              href="start"
+      >
+        Check your provider
+      </button>
+      <div class="spinner-grow hidden" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+  </div>
+    <div class="results">
+        <h2>Results</h2>
+    </div>
+
+  <div class="accordion hidden" id="accordionExample">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingOne">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+          DNS
+          <div class="spinner-grow dns-loading" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </button>
+      </h2>
+      <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
+        <div class="accordion-body dns">
+          <p class="placeholder-glow dns-loading">
+            <span class="placeholder col-7"></span>
+            <span class="placeholder col-4"></span>
+            <span class="placeholder col-4"></span>
+            <span class="placeholder col-6"></span>
+            <span class="placeholder col-8"></span>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingTwo">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+          HTTPS
+          <div class="spinner-grow https-loading" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </button>
+      </h2>
+      <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionExample">
+        <div class="accordion-body https">
+          <p class="placeholder-glow https-loading">
+            <span class="placeholder col-7"></span>
+            <span class="placeholder col-4"></span>
+            <span class="placeholder col-4"></span>
+            <span class="placeholder col-6"></span>
+            <span class="placeholder col-8"></span>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingThree">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+          HTTP
+          <div class="spinner-grow http-loading" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </button>
+      </h2>
+      <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionExample">
+        <div class="accordion-body http">
+          <h4 class="subdomain">Subdomain</h4>
+          <p class="placeholder-glow http-loading">
+            <span class="placeholder col-7"></span>
+            <span class="placeholder col-4"></span>
+            <span class="placeholder col-4"></span>
+            <span class="placeholder col-6"></span>
+            <span class="placeholder col-8"></span>
+          </p>
+          <h4 class="http-result">HTTP check result</h4>
+          <p class="placeholder-glow http-loading">
+            <span class="placeholder col-7"></span>
+            <span class="placeholder col-4"></span>
+            <span class="placeholder col-4"></span>
+            <span class="placeholder col-6"></span>
+            <span class="placeholder col-8"></span>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingFour">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+          DPI
+          <div class="spinner-grow dpi-loading" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </button>
+      </h2>
+      <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionExample">
+        <div class="accordion-body dpi">
+          <p class="placeholder-glow http-loading">
+            <span class="placeholder col-7"></span>
+            <span class="placeholder col-4"></span>
+            <span class="placeholder col-4"></span>
+            <span class="placeholder col-6"></span>
+            <span class="placeholder col-8"></span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <script>
+
+        $(".start-check")
+            .click(function(){
+                $(".results").show(1000);
+
+                $(".spinner-grow").toggleClass("hidden");
+                $(".accordion").toggleClass("hidden");
+
+                $.get("start", function(data, status){
+                    const obj = JSON.parse(data);
+                    $(".results").append(obj.msg + "\n\n");
+                });
+
+                $.get("get-ip", function(data, status) {
+                    const obj = JSON.parse(data);
+                    var new_div = $(obj.msg).hide();
+                    $(".results").append(new_div);
+                    new_div.slideDown();
+                });
+
+                $.get("dns", function(data, status) {
+                    const obj = JSON.parse(data);
+                    $(".results").append(obj.msg + "\n\n");
+                    $(".dns-loading").toggleClass("hidden");
+                    $(".dns").append(obj.msg);
+                });
+
+                $.get("https", function(data, status) {
+                    const obj = JSON.parse(data);
+                    $(".results").append(obj.msg + "\n\n");
+                    $(".https-loading").toggleClass("hidden");
+                    $(".https").append(obj.msg);
+                });
+
+                $.get("http", function(data, status) {
+                    const obj = JSON.parse(data);
+                    $(".results").append(obj.http + "\n\n");
+                    $(".http-loading").toggleClass("hidden");
+                    $(".subdomain").after(obj.subdomain);
+                    $(".http-result").after(obj.http);
+                });
+
+
+                $(".spinner-grow").toggleClass("hidden");
+            });
+    </script>
+
+
+{% endblock %}
+
