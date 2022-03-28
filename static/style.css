@@ -1,0 +1,17 @@
+:root {
+    display: flex;
+    justify-content: center;
+}
+
+body {
+    width: 800px;
+}
+
+.results {
+	display:none;
+}
+
+
+.hidden {
+    display: none
+}
