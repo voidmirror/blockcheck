@@ -133,7 +133,7 @@
                 $(".results").append(new_div);
               });
 
-              $.get("dns", function (data, status) {
+              await $.get("dns", function (data, status) {
                 const obj = JSON.parse(data);
                 $(".dns-loading").addClass("hidden");
                 $(".dns").append(obj.msg);
