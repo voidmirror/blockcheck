@@ -39,19 +39,19 @@ Thank you.
 '''
 
 # Configuration
-VERSION="0.0.9.8"
-SWHOMEPAGE="https://github.com/ValdikSS/blockcheck"
-SWUSERAGENT="Blockcheck/" + VERSION + " " + SWHOMEPAGE
+VERSION = "0.0.9.8"
+SWHOMEPAGE = "https://github.com/ValdikSS/blockcheck"
+SWUSERAGENT = "Blockcheck/" + VERSION + " " + SWHOMEPAGE
 
 dns_records_list = (
     # First server in this list should have both A and AAAA records
 
-    "rutracker.org",      # Blocked by domain name.
-    "gelbooru.com",       # Only several URLs are blocked, main page is not.
-    "e621.net",           # Blocked by domain name. Website is HTTP only.
-    "danbooru.donmai.us", # Blocked by root URL.
-    "dailymotion.com",    # Blocked by domain name.
-    "zello.com",          # Blocked by domain name.
+    "rutracker.org",  # Blocked by domain name.
+    "gelbooru.com",  # Only several URLs are blocked, main page is not.
+    "e621.net",  # Blocked by domain name. Website is HTTP only.
+    "danbooru.donmai.us",  # Blocked by root URL.
+    "dailymotion.com",  # Blocked by domain name.
+    "zello.com",  # Blocked by domain name.
 )
 
 http_list = {
@@ -91,12 +91,12 @@ dpi_list =   {
 proxy_addr = '95.137.240.30:60030'
 google_dns = '8.8.4.4'
 google_dns_v6 = '2001:4860:4860::8844'
-fake_dns = '3.3.3.3' #Fake server which should never reply
+fake_dns = '3.3.3.3'  # Fake server which should never reply
 fake_dns_v6 = '2600::10:20'
 google_dns_api = 'https://dns.google.com/resolve'
 isup_server = 'isitdownrightnow.com'
 isup_fmt = 'https://www.isitdownrightnow.com/check.php?domain={}'
-disable_isup = False #If true, presume that all sites are available
+disable_isup = False  # If true, presume that all sites are available
 disable_report = False
 disable_ipv6 = False
 force_ipv6 = False
@@ -106,6 +106,7 @@ force_dpi_check = False
 
 ipv6_available = False
 debug = False
+web_interface = False
 
 # Something really bad happened, what most likely is a bug: system DNS
 # resolver and Google DNS are unavailable, while IPv6 generally work, and so on.
@@ -114,6 +115,7 @@ really_bad_fuckup = False
 
 printed_text = ''
 printed_text_with_debug = ''
+message_to_print = ''
 
 try:
     import tkinter as tk
@@ -125,15 +127,19 @@ try:
     if not (os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')):
         tkusable = False
 
+
     class ThreadSafeConsole(tkst.ScrolledText):
         def __init__(self, master, **options):
             tkst.ScrolledText.__init__(self, master, **options)
             self.queue = queue.Queue()
             self.update_me()
+
         def write(self, line):
             self.queue.put(line)
+
         def clear(self):
             self.queue.put(None)
+
         def update_me(self):
             try:
                 while 1:
@@ -148,6 +154,7 @@ try:
                 pass
             self.after(100, self.update_me)
 
+
     def tk_terminate():
         root.destroy()
         raise SystemExit
@@ -155,10 +162,12 @@ try:
 except ImportError:
     tkusable = False
 
+
     class ThreadSafeConsole():
         pass
 
 trans_table = str.maketrans("⚠✗✓«»", '!XV""')
+
 
 def print_string(*args, **kwargs):
     message = ''
@@ -176,22 +185,28 @@ def print_string(*args, **kwargs):
 
     return message
 
+
 def print(*args, **kwargs):
-    global printed_text, printed_text_with_debug
+    global printed_text, printed_text_with_debug, message_to_print
     if tkusable:
         this_text = print_string(*args, **kwargs)
         text.write(this_text)
         printed_text += this_text
         printed_text_with_debug += this_text
     else:
+        if web_interface:
+            message_to_print += print_string(*args, **kwargs) + "<br>"
+
         if args and sys.stdout.encoding != 'UTF-8':
             args = [x.translate(trans_table).replace("[☠]", "[FAIL]").replace("[☺]", "[:)]"). \
-                    encode(sys.stdout.encoding, 'replace').decode(sys.stdout.encoding) for x in args
-                   ]
-        __builtins__.print(*args, **kwargs)
+                        encode(sys.stdout.encoding, 'replace').decode(sys.stdout.encoding) for x in args
+                    ]
+        if not web_interface:
+            __builtins__.print(*args, **kwargs)
         this_text = print_string(*args, **kwargs)
         printed_text += this_text
         printed_text_with_debug += this_text
+
 
 def print_debug(*args, **kwargs):
     global printed_text_with_debug
@@ -200,9 +215,11 @@ def print_debug(*args, **kwargs):
     if debug:
         print(*args, **kwargs)
 
+
 def really_bad_fuckup_happened():
     global really_bad_fuckup
     really_bad_fuckup = True
+
 
 def _get_a_record(site, querytype='A', dnsserver=None):
     resolver = dns.resolver.Resolver()
@@ -228,6 +245,7 @@ def _get_a_record(site, querytype='A', dnsserver=None):
     # If all the requests failed
     return ""
 
+
 def _get_a_record_over_google_api(site, querytype='A'):
     result = []
 
@@ -244,6 +262,7 @@ def _get_a_record_over_google_api(site, querytype='A'):
         pass
     return result
 
+
 def _get_a_records(sitelist, querytype='A', dnsserver=None, googleapi=False):
     result = []
     for site in sorted(sitelist):
@@ -257,7 +276,9 @@ def _get_a_records(sitelist, querytype='A', dnsserver=None, googleapi=False):
             for item in responses:
                 result.append(item)
         except dns.resolver.NXDOMAIN:
-            print("[!] Невозможно получить DNS-запись для домена {} (NXDOMAIN). Результаты могут быть неточными.".format(site))
+            print(
+                "[!] Невозможно получить DNS-запись для домена {} (NXDOMAIN). Результаты могут быть неточными.".format(
+                    site))
         except dns.resolver.NoAnswer:
             print_debug("DNS NoAnswer:", site)
         except dns.exception.DNSException as e:
@@ -266,8 +287,10 @@ def _get_a_records(sitelist, querytype='A', dnsserver=None, googleapi=False):
 
     return sorted(result)
 
+
 def _decode_bytes(input_bytes):
     return input_bytes.decode(errors='replace')
+
 
 def _get_url(url, proxy=None, ip=None, headers=False, follow_redirects=True):
     class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
@@ -276,6 +299,7 @@ def _get_url(url, proxy=None, ip=None, headers=False, follow_redirects=True):
             infourl.status = code
             infourl.code = code
             return infourl
+
         http_error_300 = http_error_302
         http_error_301 = http_error_302
         http_error_303 = http_error_302
@@ -290,11 +314,11 @@ def _get_url(url, proxy=None, ip=None, headers=False, follow_redirects=True):
         context_hostname_check = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
         context_hostname_check.verify_mode = ssl.CERT_REQUIRED
         conn = context_hostname_check.wrap_socket(socket.socket(socket.AF_INET6 if \
-            (':' in ip if ip else False) else socket.AF_INET),
-            server_hostname=host)
+                                                                    (':' in ip if ip else False) else socket.AF_INET),
+                                                  server_hostname=host)
         conn.settimeout(10)
         print_debug("_get_url: connecting over " + ('IPv6' if \
-            (':' in ip if ip else False) else 'IPv4'))
+                                                        (':' in ip if ip else False) else 'IPv4'))
         try:
             conn.connect((ip if ip else host, 443))
         except (ssl.CertificateError) as e:
@@ -339,7 +363,7 @@ def _get_url(url, proxy=None, ip=None, headers=False, follow_redirects=True):
 
     if proxy:
         req.set_proxy(proxy, 'http')
-    
+
     req.add_header('User-Agent', SWUSERAGENT)
 
     try:
@@ -357,7 +381,7 @@ def _get_url(url, proxy=None, ip=None, headers=False, follow_redirects=True):
         if 'CERTIFICATE_VERIFY_FAILED' in str(e):
             return (-1, '')
         if type(e) is urllib.error.HTTPError:
-            return(e.code, '')
+            return (e.code, '')
         return (0, '')
     except (KeyboardInterrupt, SystemExit) as e:
         # re-raise exception to send it to caller function
@@ -366,6 +390,7 @@ def _get_url(url, proxy=None, ip=None, headers=False, follow_redirects=True):
         print("[☠] Неизвестная ошибка:", repr(e))
         return (0, '')
     return (opened.status, output)
+
 
 def _cut_str(string, begin, end):
     cut_begin = string.find(begin)
@@ -376,12 +401,13 @@ def _cut_str(string, begin, end):
         return
     return string[cut_begin + len(begin):cut_begin + cut_end]
 
-def _get_ip_and_isp():
+
+def get_ip_and_isp():
     # Dirty and cheap
     try:
         request = urllib.request.Request("https://2ip.ru/",
-                     headers={"User-Agent": SWUSERAGENT}
-                     )
+                                         headers={"User-Agent": SWUSERAGENT}
+                                         )
         data = _decode_bytes(urllib.request.urlopen(request, timeout=10).read())
         ip = _cut_str(data, '<big id="d_clip_button">', '</big>')
         isp = ' '.join(_cut_str(data, '"/isp/', '</a>').replace('">', '').split())
@@ -391,7 +417,8 @@ def _get_ip_and_isp():
     except Exception:
         return
 
-def _mask_ip(ipaddr):
+
+def mask_ip(ipaddr):
     ipaddr_s = ipaddress.ip_address(ipaddr)
     if ipaddr_s.version == 4:
         ipaddr_s = ipaddress.ip_interface(ipaddr + '/24')
@@ -400,6 +427,7 @@ def _mask_ip(ipaddr):
         ipaddr_s = ipaddress.ip_interface(ipaddr + '/64')
         return str(ipaddr_s.network).replace(':/64', 'xxxx::')
     return None
+
 
 def _dpi_send(host, port, data, fragment_size=0, fragment_count=0):
     sock = socket.create_connection((host, port), 10)
@@ -423,117 +451,119 @@ def _dpi_send(host, port, data, fragment_size=0, fragment_count=0):
         sock.close()
     return _decode_bytes(recv)
 
+
 def _dpi_build_tests(host, urn, ip, lookfor):
     dpi_built_list = \
         {'дополнительный пробел после GET':
-                {'data': "GET  {} HTTP/1.0\r\n".format(urn) + \
-                        "Host: {}\r\nConnection: close\r\n\r\n".format(host),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 0, 'fragment_count': 0},
-            'перенос строки перед GET':
-                {'data': "\r\nGET {} HTTP/1.0\r\n".format(urn) + \
-                        "Host: {}\r\nConnection: close\r\n\r\n".format(host),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 0, 'fragment_count': 0},
-            'табуляция в конце домена':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                        "Host: {}\t\r\nConnection: close\r\n\r\n".format(host),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 0, 'fragment_count': 0},
-            'фрагментирование заголовка':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                        "Host: {}\r\nConnection: close\r\n\r\n".format(host),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 2, 'fragment_count': 6},
-            'точка в конце домена':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                        "Host: {}.\r\nConnection: close\r\n\r\n".format(host),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 0, 'fragment_count': 0},
-            'заголовок hoSt вместо Host':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                        "hoSt: {}\r\nConnection: close\r\n\r\n".format(host),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 0, 'fragment_count': 0},
-            'заголовок hOSt вместо Host':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                        "hOSt: {}\r\nConnection: close\r\n\r\n".format(host),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 0, 'fragment_count': 0},
-            'значение Host БОЛЬШИМИ БУКВАМИ':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                        "Host: {}\r\nConnection: close\r\n\r\n".format(host.upper()),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 0, 'fragment_count': 0},
-            'отсутствие пробела между двоеточием и значением заголовка Host':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                        "Host:{}\r\nConnection: close\r\n\r\n".format(host),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 0, 'fragment_count': 0},
-            'перенос строки в заголовках в UNIX-стиле':
-                {'data': "GET {} HTTP/1.0\n".format(urn) + \
-                        "Host: {}\nConnection: close\n\n".format(host),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 0, 'fragment_count': 0},
-            'необычный порядок заголовков':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                        "Connection: close\r\nHost: {}\r\n\r\n".format(host),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 0, 'fragment_count': 0},
-            'фрагментирование заголовка, hoSt и отсутствие пробела одновременно':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                        "hoSt:{}\r\nConnection: close\r\n\r\n".format(host),
-                'lookfor': lookfor, 'ip': ip,
-                'fragment_size': 2, 'fragment_count': 6},
-            '7 КБ данных перед Host':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                         "Connection: close\r\n" + \
-                         "X-Padding1: {}\r\n".format('1'*1000) + \
-                         "X-Padding2: {}\r\n".format('2'*1000) + \
-                         "X-Padding3: {}\r\n".format('3'*1000) + \
-                         "X-Padding4: {}\r\n".format('4'*1000) + \
-                         "X-Padding5: {}\r\n".format('5'*1000) + \
-                         "X-Padding6: {}\r\n".format('6'*1000) + \
-                         "X-Padding7: {}\r\n".format('7'*1000) + \
-                         "Host: {}\r\n\r\n".format(host),
-                 'lookfor': lookfor, 'ip': ip,
-                 'fragment_size': 0, 'fragment_count': 0},
-            '15 КБ данных перед Host':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                         "Connection: close\r\n" + \
-                         "X-Padding1: {}\r\n".format('1'*1000) + \
-                         "X-Padding2: {}\r\n".format('2'*1000) + \
-                         "X-Padding3: {}\r\n".format('3'*1000) + \
-                         "X-Padding4: {}\r\n".format('4'*1000) + \
-                         "X-Padding5: {}\r\n".format('5'*1000) + \
-                         "X-Padding6: {}\r\n".format('6'*1000) + \
-                         "X-Padding7: {}\r\n".format('7'*1000) + \
-                         "X-Padding8: {}\r\n".format('8'*1000) + \
-                         "X-Padding9: {}\r\n".format('9'*1000) + \
-                         "X-Padding10: {}\r\n".format('0'*1000) + \
-                         "X-Padding11: {}\r\n".format('1'*1000) + \
-                         "X-Padding12: {}\r\n".format('2'*1000) + \
-                         "X-Padding13: {}\r\n".format('3'*1000) + \
-                         "X-Padding14: {}\r\n".format('4'*1000) + \
-                         "X-Padding15: {}\r\n".format('5'*1000) + \
-                         "Host: {}\r\n\r\n".format(host),
-                 'lookfor': lookfor, 'ip': ip,
-                 'fragment_size': 0, 'fragment_count': 0},
-            '21 КБ данных перед Host':
-                {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
-                         "Connection: close\r\n" + \
-                         "X-Padding1: {}\r\n".format('1'*3000) + \
-                         "X-Padding2: {}\r\n".format('2'*3000) + \
-                         "X-Padding3: {}\r\n".format('3'*3000) + \
-                         "X-Padding4: {}\r\n".format('4'*3000) + \
-                         "X-Padding5: {}\r\n".format('5'*3000) + \
-                         "X-Padding6: {}\r\n".format('6'*3000) + \
-                         "X-Padding7: {}\r\n".format('7'*3000) + \
-                         "Host: {}\r\n\r\n".format(host),
-                 'lookfor': lookfor, 'ip': ip,
-                 'fragment_size': 0, 'fragment_count': 0},
-        }
+             {'data': "GET  {} HTTP/1.0\r\n".format(urn) + \
+                      "Host: {}\r\nConnection: close\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         'перенос строки перед GET':
+             {'data': "\r\nGET {} HTTP/1.0\r\n".format(urn) + \
+                      "Host: {}\r\nConnection: close\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         'табуляция в конце домена':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "Host: {}\t\r\nConnection: close\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         'фрагментирование заголовка':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "Host: {}\r\nConnection: close\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 2, 'fragment_count': 6},
+         'точка в конце домена':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "Host: {}.\r\nConnection: close\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         'заголовок hoSt вместо Host':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "hoSt: {}\r\nConnection: close\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         'заголовок hOSt вместо Host':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "hOSt: {}\r\nConnection: close\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         'значение Host БОЛЬШИМИ БУКВАМИ':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "Host: {}\r\nConnection: close\r\n\r\n".format(host.upper()),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         'отсутствие пробела между двоеточием и значением заголовка Host':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "Host:{}\r\nConnection: close\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         'перенос строки в заголовках в UNIX-стиле':
+             {'data': "GET {} HTTP/1.0\n".format(urn) + \
+                      "Host: {}\nConnection: close\n\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         'необычный порядок заголовков':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "Connection: close\r\nHost: {}\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         'фрагментирование заголовка, hoSt и отсутствие пробела одновременно':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "hoSt:{}\r\nConnection: close\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 2, 'fragment_count': 6},
+         '7 КБ данных перед Host':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "Connection: close\r\n" + \
+                      "X-Padding1: {}\r\n".format('1' * 1000) + \
+                      "X-Padding2: {}\r\n".format('2' * 1000) + \
+                      "X-Padding3: {}\r\n".format('3' * 1000) + \
+                      "X-Padding4: {}\r\n".format('4' * 1000) + \
+                      "X-Padding5: {}\r\n".format('5' * 1000) + \
+                      "X-Padding6: {}\r\n".format('6' * 1000) + \
+                      "X-Padding7: {}\r\n".format('7' * 1000) + \
+                      "Host: {}\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         '15 КБ данных перед Host':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "Connection: close\r\n" + \
+                      "X-Padding1: {}\r\n".format('1' * 1000) + \
+                      "X-Padding2: {}\r\n".format('2' * 1000) + \
+                      "X-Padding3: {}\r\n".format('3' * 1000) + \
+                      "X-Padding4: {}\r\n".format('4' * 1000) + \
+                      "X-Padding5: {}\r\n".format('5' * 1000) + \
+                      "X-Padding6: {}\r\n".format('6' * 1000) + \
+                      "X-Padding7: {}\r\n".format('7' * 1000) + \
+                      "X-Padding8: {}\r\n".format('8' * 1000) + \
+                      "X-Padding9: {}\r\n".format('9' * 1000) + \
+                      "X-Padding10: {}\r\n".format('0' * 1000) + \
+                      "X-Padding11: {}\r\n".format('1' * 1000) + \
+                      "X-Padding12: {}\r\n".format('2' * 1000) + \
+                      "X-Padding13: {}\r\n".format('3' * 1000) + \
+                      "X-Padding14: {}\r\n".format('4' * 1000) + \
+                      "X-Padding15: {}\r\n".format('5' * 1000) + \
+                      "Host: {}\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         '21 КБ данных перед Host':
+             {'data': "GET {} HTTP/1.0\r\n".format(urn) + \
+                      "Connection: close\r\n" + \
+                      "X-Padding1: {}\r\n".format('1' * 3000) + \
+                      "X-Padding2: {}\r\n".format('2' * 3000) + \
+                      "X-Padding3: {}\r\n".format('3' * 3000) + \
+                      "X-Padding4: {}\r\n".format('4' * 3000) + \
+                      "X-Padding5: {}\r\n".format('5' * 3000) + \
+                      "X-Padding6: {}\r\n".format('6' * 3000) + \
+                      "X-Padding7: {}\r\n".format('7' * 3000) + \
+                      "Host: {}\r\n\r\n".format(host),
+              'lookfor': lookfor, 'ip': ip,
+              'fragment_size': 0, 'fragment_count': 0},
+         }
     return dpi_built_list
+
 
 def check_isup(page_url):
     """
@@ -552,14 +582,14 @@ def check_isup(page_url):
     in the future and because check_isup will output a notification for
     the user.
     """
-    #Note that isup.me doesn't use HTTPS and therefore the ISP can slip
-    #false information (and if it gets blocked, the error page by the ISP can
-    #happen to have the markers we look for). We should inform the user about
-    #this possibility when showing results.
+    # Note that isup.me doesn't use HTTPS and therefore the ISP can slip
+    # false information (and if it gets blocked, the error page by the ISP can
+    # happen to have the markers we look for). We should inform the user about
+    # this possibility when showing results.
     if disable_isup:
         return True
     elif page_url.startswith("https://"):
-        #print("[☠] {} не поддерживает HTTPS, считаем, что сайт работает, "
+        # print("[☠] {} не поддерживает HTTPS, считаем, что сайт работает, "
         #      "а проблемы только у нас".format(isup_server))
         return True
 
@@ -567,9 +597,9 @@ def check_isup(page_url):
 
     url = isup_fmt.format(urllib.parse.urlparse(page_url).netloc)
     status, output = _get_url(url)
-    #if output:
+    # if output:
     #    output = json.loads(output)
-    
+
     if status in (0, -1):
         print("[⁇] Ошибка при соединении с {}".format(isup_server))
         return None
@@ -586,18 +616,20 @@ def check_isup(page_url):
         print("[⁇] Не удалось распознать ответ от {}".format(isup_server))
         return None
 
+
 DNS_IPV4 = 0
 DNS_IPV6 = 1
 
+
 def test_dns(dnstype=DNS_IPV4):
     sites_list = list(dns_records_list)
-    query_type = ("A" if dnstype==DNS_IPV4 else "AAAA")
-    
-    print("[O] Тестируем " + ("IPv4" if dnstype==DNS_IPV4 else "IPv6") + " DNS")
+    query_type = ("A" if dnstype == DNS_IPV4 else "AAAA")
+
+    print("[O] Тестируем " + ("IPv4" if dnstype == DNS_IPV4 else "IPv6") + " DNS")
 
     resolved_default_dns = _get_a_records(sites_list, query_type)
     print("\tЧерез системный DNS:\t", str(resolved_default_dns))
-    resolved_google_dns = _get_a_records(sites_list, query_type, (google_dns if dnstype==DNS_IPV4 else google_dns_v6))
+    resolved_google_dns = _get_a_records(sites_list, query_type, (google_dns if dnstype == DNS_IPV4 else google_dns_v6))
     if resolved_google_dns:
         print("\tЧерез Google DNS:\t", str(resolved_google_dns))
     else:
@@ -608,7 +640,7 @@ def test_dns(dnstype=DNS_IPV4):
     else:
         print("\tНе удалось подключиться к Google API")
         really_bad_fuckup_happened()
-    resolved_fake_dns = _get_a_records((sites_list[0],), query_type, (fake_dns if dnstype==DNS_IPV4 else fake_dns_v6))
+    resolved_fake_dns = _get_a_records((sites_list[0],), query_type, (fake_dns if dnstype == DNS_IPV4 else fake_dns_v6))
     if resolved_fake_dns:
         print("\tЧерез недоступный DNS:\t", str(resolved_fake_dns))
     else:
@@ -661,9 +693,10 @@ def test_dns(dnstype=DNS_IPV4):
         return 2
 
     print("[?] Способ блокировки DNS определить не удалось. "
-        "Убедитесь, что вы используете DNS провайдера, а не сторонний.")
+          "Убедитесь, что вы используете DNS провайдера, а не сторонний.")
     really_bad_fuckup_happened()
     return 5
+
 
 HTTP_ACCESS_NOBLOCKS = 0
 HTTP_ACCESS_IPBLOCK = 1
@@ -674,6 +707,7 @@ HTTP_ISUP_ALLUP = 0
 HTTP_ISUP_SOMEDOWN = 1
 HTTP_ISUP_ALLDOWN = 2
 HTTP_ISUP_BROKEN = 3
+
 
 def test_http_access(by_ip=False):
     """
@@ -728,7 +762,7 @@ def test_http_access(by_ip=False):
         if ipv6_available and sites[site].get('ipv6'):
             result_v6_ok = (result_v6[0] == sites[site]['status'] and result_v6[1].find(sites[site]['lookfor']) != -1)
         else:
-            result_v6_ok = True #Not really
+            result_v6_ok = True  # Not really
 
         if result_ok and result_v6_ok:
             print("[✓] Сайт открывается")
@@ -775,7 +809,7 @@ def test_http_access(by_ip=False):
 
     all_sites = [http_list[i].get('is_blacklisted', True) for i in http_list].count(True)
 
-    #Result without isup.me
+    # Result without isup.me
     if successes_v4 == all_sites:
         result_v4 = HTTP_ACCESS_NOBLOCKS
     elif successes_v4 > 0 and successes_v4 + successes_proxy == all_sites:
@@ -795,7 +829,7 @@ def test_http_access(by_ip=False):
         else:
             result_v6 = HTTP_ACCESS_IPBLOCK
 
-    #isup.me info
+    # isup.me info
     if blocks_ambiguous > 0:
         isup = HTTP_ISUP_BROKEN
     elif down == all_sites:
@@ -806,6 +840,7 @@ def test_http_access(by_ip=False):
         isup = HTTP_ISUP_ALLUP
 
     return result_v4, result_v6, isup, (blocks_subdomains > 0)
+
 
 def test_https_cert():
     sites = https_list
@@ -849,7 +884,10 @@ def test_https_cert():
         # Some sites are down or unknown result
         return 3
 
+
 def test_dpi():
+    global message_to_print
+    message_to_print = ""
     print("[O] Тестируем обход DPI" + (' (только IPv4)' if ipv6_available else ''))
 
     dpiresults = []
@@ -870,7 +908,8 @@ def test_dpi():
             test = dpi_built_tests[testname]
             print("\tПробуем способ «{}» на {}".format(testname, dpisite))
             try:
-                result = _dpi_send(test.get('ip'), 80, test.get('data'), test.get('fragment_size'), test.get('fragment_count'))
+                result = _dpi_send(test.get('ip'), 80, test.get('data'), test.get('fragment_size'),
+                                   test.get('fragment_count'))
             except (KeyboardInterrupt, SystemExit) as e:
                 # re-raise exception to send it to caller function
                 raise e
@@ -885,7 +924,10 @@ def test_dpi():
                     dpiresults.append('Passive DPI')
                 else:
                     print("[☠] Сайт не открывается")
+    if web_interface:
+        return message_to_print
     return list(set(dpiresults))
+
 
 def check_ipv6_availability():
     print("Проверка работоспособности IPv6", end='')
@@ -894,15 +936,16 @@ def check_ipv6_availability():
         v6 = _get_url("http://ipv6.icanhazip.com/", ip=v6addr[0])
         if len(v6[1]):
             v6src = v6[1].strip()
-            if force_ipv6 or (not ipaddress.IPv6Address(v6src).teredo 
-                                and not ipaddress.IPv6Address(v6src).sixtofour):
+            if force_ipv6 or (not ipaddress.IPv6Address(v6src).teredo
+                              and not ipaddress.IPv6Address(v6src).sixtofour):
                 print(": IPv6 доступен!")
                 return v6src
             else:
-                print (": обнаружен туннель Teredo или 6to4, игнорируем.")
+                print(": обнаружен туннель Teredo или 6to4, игнорируем.")
                 return False
     print(": IPv6 недоступен.")
     return False
+
 
 def get_ispinfo(ipaddr):
     try:
@@ -916,14 +959,19 @@ def get_ispinfo(ipaddr):
             ipwhois.exceptions.HTTPRateLimitError):
         return False
 
+
 def main():
     ipv6_addr = None
     global ipv6_available
 
     print("BlockCheck v{}".format(VERSION))
     print("Для получения корректных результатов используйте DNS-сервер",
-        "провайдера и отключите средства обхода блокировок.")
+          "провайдера и отключите средства обхода блокировок.")
     print()
+
+    if web_interface:
+        return message_to_print
+
     latest_version = _get_url("https://raw.githubusercontent.com/ValdikSS/blockcheck/master/latest_version.txt")
     if latest_version[0] == 200 and latest_version[1].strip() != VERSION:
         print("Доступная новая версия программы: {}. Обновитесь, пожалуйста.".format(latest_version[1].strip()))
@@ -932,10 +980,10 @@ def main():
         ipv6_available = check_ipv6_availability()
         if (ipv6_available):
             ipv6_addr = ipv6_available
-    ip_isp = _get_ip_and_isp()
+    ip_isp = get_ip_and_isp()
     if ip_isp:
         if ipv6_available:
-            print("IP: {}, IPv6: {}, провайдер: {}".format(_mask_ip(ip_isp[0]), _mask_ip(ipv6_addr), ip_isp[1]))
+            print("IP: {}, IPv6: {}, провайдер: {}".format(mask_ip(ip_isp[0]), mask_ip(ipv6_addr), ip_isp[1]))
             if not force_ipv6:
                 asn4 = get_ispinfo(ip_isp[0])
                 asn6 = get_ispinfo(ipv6_addr)
@@ -943,7 +991,7 @@ def main():
                     ipv6_available = False
                     print("Вероятно, у вас IPv6-туннель. Проверка IPv6 отключена.")
         else:
-            print("IP: {}, провайдер: {}".format(_mask_ip(ip_isp[0]), ip_isp[1]))
+            print("IP: {}, провайдер: {}".format(mask_ip(ip_isp[0]), ip_isp[1]))
         print()
     dnsv4 = test_dns(DNS_IPV4)
     dnsv6 = 0
@@ -988,28 +1036,28 @@ def main():
     if ipv6_available:
         if dnsv6 == 5:
             print("[⚠] Не удалось определить способ блокировки IPv6 DNS.\n",
-                "Верните настройки DNS провайдера, если вы используете сторонний DNS-сервер.",
-                "Если вы используете DNS провайдера, возможно, ответы DNS модифицирует вышестоящий",
-                "провайдер.\n",
-                "Вам следует использовать шифрованный канал до DNS-серверов, например, через VPN, Tor, " + \
-                "HTTPS/Socks прокси или DNSCrypt.")
+                  "Верните настройки DNS провайдера, если вы используете сторонний DNS-сервер.",
+                  "Если вы используете DNS провайдера, возможно, ответы DNS модифицирует вышестоящий",
+                  "провайдер.\n",
+                  "Вам следует использовать шифрованный канал до DNS-серверов, например, через VPN, Tor, " + \
+                  "HTTPS/Socks прокси или DNSCrypt.")
         elif dnsv6 == 4:
             print("[⚠] Ваш провайдер блокирует сторонние IPv6 DNS-серверы.\n",
-                "Вам следует использовать шифрованный канал до DNS-серверов, например, через VPN, Tor, " + \
-                "HTTPS/Socks прокси или DNSCrypt.")
+                  "Вам следует использовать шифрованный канал до DNS-серверов, например, через VPN, Tor, " + \
+                  "HTTPS/Socks прокси или DNSCrypt.")
         elif dnsv6 == 3:
             print("[⚠] Ваш провайдер подменяет DNS-записи, но не перенаправляет сторонние IPv6 DNS-серверы на свой.\n",
-                "Вам поможет смена DNS, например, на Яндекс.DNS 2a02:6b8::feed:0ff или Google DNS 2001:4860:4860::8888.")
+                  "Вам поможет смена DNS, например, на Яндекс.DNS 2a02:6b8::feed:0ff или Google DNS 2001:4860:4860::8888.")
         elif dnsv6 == 2:
             print("[⚠] Ваш провайдер подменяет DNS-записи и перенаправляет сторонние IPv6 DNS-серверы на свой.\n",
-                "Вам следует использовать шифрованный канал до DNS-серверов, например, через VPN, Tor, " + \
-                "HTTPS/Socks прокси или DNSCrypt.")
+                  "Вам следует использовать шифрованный канал до DNS-серверов, например, через VPN, Tor, " + \
+                  "HTTPS/Socks прокси или DNSCrypt.")
         elif dnsv6 == 1:
             print("[⚠] Ваш провайдер перенаправляет сторонние IPv6 DNS-серверы на свой, но не подменяет DNS-записи.\n",
-                "Это несколько странно и часто встречается в мобильных сетях.\n",
-                "Если вы хотите использовать сторонний DNS, вам следует использовать шифрованный канал до " + \
-                "DNS-серверов, например, через VPN, Tor, HTTPS/Socks прокси или DNSCrypt, но обходу " + \
-                "блокировок это не поможет.")
+                  "Это несколько странно и часто встречается в мобильных сетях.\n",
+                  "Если вы хотите использовать сторонний DNS, вам следует использовать шифрованный канал до " + \
+                  "DNS-серверов, например, через VPN, Tor, HTTPS/Socks прокси или DNSCrypt, но обходу " + \
+                  "блокировок это не поможет.")
 
     if https == 1:
         print("[⚠] Ваш провайдер подменяет HTTPS-сертификат на свой для сайтов из реестра.")
@@ -1041,10 +1089,10 @@ def main():
         if http_isup == HTTP_ISUP_ALLUP:
             print("{} {}".format(symbol, message))
         else:
-            #ACHTUNG: translating this program into other languages
-            #might be tricky. Not into English, though.
+            # ACHTUNG: translating this program into other languages
+            # might be tricky. Not into English, though.
             print("{} Если проигнорировать {}, то {}" \
-                .format(symbol, isup_server, message[0].lower() + message[1:]))
+                  .format(symbol, isup_server, message[0].lower() + message[1:]))
 
     if http_v4 == HTTP_ACCESS_IPBLOCK:
         if (ipv6_available and http_v6 == HTTP_ACCESS_IPBLOCK) or not ipv6_available:
@@ -1077,6 +1125,8 @@ def main():
             and https == 0:
         print_http_result("[☺]", "Ваш провайдер не блокирует сайты.")
 
+
+
     if not disable_report:
         try:
             report_request = urllib.request.urlopen(
@@ -1084,8 +1134,8 @@ def main():
                 data=urllib.parse.urlencode({
                     "text": printed_text,
                     "text_debug": printed_text_with_debug if really_bad_fuckup else '',
-                    }).encode('utf-8')
-                )
+                }).encode('utf-8')
+            )
             if (report_request):
                 report_request.close()
         except urllib.error.URLError as e:
@@ -1106,43 +1156,105 @@ def main():
                               "https://github.com/ValdikSS/blockcheck/wiki/Нужна-ваша-помощь"
                               )
 
-if __name__ == "__main__":
+
+def setup_args():
     if getattr(sys, 'frozen', False):
         os.environ['SSL_CERT_FILE'] = os.path.join(sys._MEIPASS, 'lib', 'ca-certificates.crt')
 
     parser = argparse.ArgumentParser(description='Определитель типа блокировки сайтов у провайдера.')
     parser.add_argument('--console', action='store_true', help='Консольный режим. Отключает Tkinter GUI.')
-    parser.add_argument('--no-report', action='store_true', help='Не отправлять результат на сервер (отправляется только выводимый текст).')
+    parser.add_argument('--no-report', action='store_true',
+                        help='Не отправлять результат на сервер (отправляется только выводимый текст).')
     parser.add_argument('--no-isup', action='store_true',
-                            help='Не проверять доступность сайтов через {}.' \
-                                    .format(isup_server))
-    parser.add_argument('--force-dpi-check', action='store_true', help='Выполнить проверку DPI, даже если провайдер не блокирует сайты.')
+                        help='Не проверять доступность сайтов через {}.' \
+                        .format(isup_server))
+    parser.add_argument('--force-dpi-check', action='store_true',
+                        help='Выполнить проверку DPI, даже если провайдер не блокирует сайты.')
     parser.add_argument('--disable-ipv6', action='store_true', help='Отключить поддержку IPv6.')
     parser.add_argument('--force-ipv6', action='store_true', help='Игнорировать обнаружение туннелей.')
     parser.add_argument('--debug', action='store_true', help='Включить режим отладки (и --no-report).')
+    parser.add_argument('--web', action='store_true', help='Веб-интерфейс.')
     args = parser.parse_args()
 
     if args.console:
+        global tkusable
         tkusable = False
 
     if args.no_isup:
+        global disable_isup
         disable_isup = True
 
     if args.no_report:
+        global disable_report
         disable_report = True
 
     if args.force_dpi_check:
+        global force_dpi_check
         force_dpi_check = True
 
     if args.disable_ipv6:
+        global disable_ipv6
         disable_ipv6 = True
-    
+
     if args.force_ipv6:
+        global force_ipv6
         force_ipv6 = True
 
     if args.debug:
+        global debug
         debug = True
         disable_report = True
+
+    if args.web:
+        global web_interface
+        web_interface = True
+
+    return 0
+
+
+if __name__ == "__main__":
+    # if getattr(sys, 'frozen', False):
+    #     os.environ['SSL_CERT_FILE'] = os.path.join(sys._MEIPASS, 'lib', 'ca-certificates.crt')
+    #
+    # parser = argparse.ArgumentParser(description='Определитель типа блокировки сайтов у провайдера.')
+    # parser.add_argument('--console', action='store_true', help='Консольный режим. Отключает Tkinter GUI.')
+    # parser.add_argument('--no-report', action='store_true', help='Не отправлять результат на сервер (отправляется только выводимый текст).')
+    # parser.add_argument('--no-isup', action='store_true',
+    #                         help='Не проверять доступность сайтов через {}.' \
+    #                                 .format(isup_server))
+    # parser.add_argument('--force-dpi-check', action='store_true', help='Выполнить проверку DPI, даже если провайдер не блокирует сайты.')
+    # parser.add_argument('--disable-ipv6', action='store_true', help='Отключить поддержку IPv6.')
+    # parser.add_argument('--force-ipv6', action='store_true', help='Игнорировать обнаружение туннелей.')
+    # parser.add_argument('--debug', action='store_true', help='Включить режим отладки (и --no-report).')
+    # parser.add_argument('--web', action='store_true', help='Веб-интерфейс.')
+    # args = parser.parse_args()
+    #
+    # if args.console:
+    #     tkusable = False
+    #
+    # if args.no_isup:
+    #     disable_isup = True
+    #
+    # if args.no_report:
+    #     disable_report = True
+    #
+    # if args.force_dpi_check:
+    #     force_dpi_check = True
+    #
+    # if args.disable_ipv6:
+    #     disable_ipv6 = True
+    #
+    # if args.force_ipv6:
+    #     force_ipv6 = True
+    #
+    # if args.debug:
+    #     debug = True
+    #     disable_report = True
+    #
+    # if args.web:
+    #     web_interface = True
+
+    setup_args()
 
     if tkusable:
         root = tk.Tk()
@@ -1156,6 +1268,7 @@ if __name__ == "__main__":
         except (KeyboardInterrupt, SystemExit):
             os._exit(0)
     else:
+
         try:
             main()
         except (KeyboardInterrupt, SystemExit):

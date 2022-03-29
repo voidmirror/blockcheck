@@ -1,0 +1,36 @@
+:root {
+    display: flex;
+    justify-content: center;
+}
+
+body {
+    width: 800px;
+}
+
+.results {
+    margin: 5px;
+	display:none;
+}
+
+
+.hidden {
+    display: none;
+}
+
+h2 {
+    text-align: center;
+}
+
+.spinner-grow {
+    margin-left: 10px;
+    }
+
+.start-check {
+	align-items: center;
+	display: flex;
+}
+
+.accordion-div {
+    display: flex;
+    justify-content: space-between;
+}
