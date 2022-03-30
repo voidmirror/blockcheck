@@ -27,7 +27,9 @@ h2 {
 
 .start-check {
 	align-items: center;
+	align-content: center;
 	display: flex;
+	margin-top: 10px;
 }
 
 .accordion-div {
